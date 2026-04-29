@@ -1,0 +1,1120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Marketing Intelligence Dashboard — Sprout Solutions</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:       #0D0F1A;
+  --surface:  #141627;
+  --surface2: #1C1F35;
+  --border:   rgba(255,255,255,.07);
+  --accent:   #6C5CE7;
+  --green:    #00B894;
+  --blue:     #0984E3;
+  --pink:     #fd79a8;
+  --yellow:   #FDCB6E;
+  --orange:   #E17055;
+  --teal:     #00CEC9;
+  --text:     #E8EAF0;
+  --muted:    #636E8A;
+  --font:     'IBM Plex Sans', sans-serif;
+  --mono:     'IBM Plex Mono', monospace;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: var(--font); background: var(--bg); color: var(--text); min-height: 100vh; }
+
+/* ── TOPBAR ── */
+.topbar {
+  background: var(--surface); border-bottom: 1px solid var(--border);
+  padding: 0 28px; display: flex; align-items: center; justify-content: space-between;
+  height: 56px; position: sticky; top: 0; z-index: 100;
+}
+.topbar-left { display: flex; align-items: center; gap: 16px; }
+.logo-mark { font-family: var(--mono); font-size: 18px; font-weight: 600; color: var(--accent); letter-spacing: 3px; }
+.logo-sep { width: 1px; height: 22px; background: var(--border); }
+.logo-sub { font-size: 12px; color: var(--muted); }
+.topbar-right { display: flex; align-items: center; gap: 12px; }
+.live-badge { display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 600; color: var(--green); background: rgba(0,184,148,.1); border: 1px solid rgba(0,184,148,.25); padding: 4px 10px; border-radius: 20px; }
+.live-dot { width: 6px; height: 6px; background: var(--green); border-radius: 50%; animation: pulse 2s infinite; }
+@keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.5;transform:scale(.8)} }
+.refresh-btn { background: rgba(108,92,231,.15); border: 1px solid rgba(108,92,231,.3); color: var(--accent); font-size: 12px; font-weight: 600; padding: 6px 14px; border-radius: 6px; cursor: pointer; font-family: var(--font); transition: all .2s; }
+.refresh-btn:hover { background: rgba(108,92,231,.3); border-color: var(--accent); }
+.refresh-btn.loading { opacity: .6; pointer-events: none; }
+.last-updated { font-size: 11px; color: var(--muted); font-family: var(--mono); }
+
+/* ── CONFIG BANNER ── */
+.config-banner { background: rgba(253,203,110,.07); border-bottom: 1px solid rgba(253,203,110,.15); padding: 10px 28px; display: flex; align-items: center; gap: 10px; font-size: 12px; color: #FDCB6E; }
+.config-banner code { font-family: var(--mono); background: rgba(253,203,110,.12); padding: 1px 6px; border-radius: 3px; font-size: 11px; }
+
+/* ── DATE RANGE BAR ── */
+.date-range-bar { background: var(--surface); border-bottom: 1px solid var(--border); padding: 10px 28px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.dr-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .8px; color: var(--muted); white-space: nowrap; }
+.dr-presets { display: flex; gap: 4px; }
+.dr-btn {
+  background: var(--surface2); border: 1px solid var(--border); color: var(--muted);
+  font-size: 11px; font-weight: 600; font-family: var(--mono); padding: 5px 12px;
+  border-radius: 6px; cursor: pointer; transition: all .15s;
+}
+.dr-btn:hover { border-color: rgba(108,92,231,.4); color: var(--text); }
+.dr-btn.active { background: rgba(108,92,231,.2); border-color: var(--accent); color: var(--accent); }
+.dr-sep { width: 1px; height: 20px; background: var(--border); margin: 0 6px; }
+.custom-dates { display: none; align-items: center; gap: 8px; }
+.custom-dates.visible { display: flex; }
+.custom-dates span { font-size: 11px; color: var(--muted); }
+.date-input {
+  background: var(--surface2); border: 1px solid var(--border); color: var(--text);
+  font-size: 11px; font-family: var(--mono); padding: 5px 8px; border-radius: 6px;
+  outline: none; cursor: pointer; transition: border-color .2s;
+}
+.date-input:focus { border-color: var(--accent); }
+.date-input::-webkit-calendar-picker-indicator { filter: invert(0.5); cursor: pointer; }
+.dr-apply-btn { background: var(--accent); border: none; color: #fff; font-size: 11px; font-weight: 600; font-family: var(--font); padding: 5px 12px; border-radius: 6px; cursor: pointer; transition: opacity .2s; }
+.dr-apply-btn:hover { opacity: .85; }
+.date-range-display { margin-left: auto; font-size: 11px; color: var(--muted); font-family: var(--mono); }
+
+/* ── VIEW TABS ── */
+.view-tabs { background: var(--surface2); border-bottom: 1px solid var(--border); padding: 0 28px; display: flex; gap: 0; }
+.view-tab {
+  font-size: 12px; font-weight: 600; color: var(--muted); padding: 12px 20px;
+  cursor: pointer; border-bottom: 2px solid transparent; transition: all .2s;
+  white-space: nowrap;
+}
+.view-tab:hover { color: var(--text); }
+.view-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+/* ── LAYOUT ── */
+.dash-wrap { padding: 22px 28px; max-width: 1440px; margin: 0 auto; }
+@keyframes fadeUp { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+@keyframes shimmer { 0%{opacity:.4}50%{opacity:.8}100%{opacity:.4} }
+
+/* ── KPI CARDS ── */
+.kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 12px; }
+.kpi-card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+  padding: 16px 18px; position: relative; overflow: hidden; animation: fadeUp .35s ease both;
+}
+.kpi-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; }
+.kpi-card.c-purple::before { background: var(--accent); }
+.kpi-card.c-green::before  { background: var(--green); }
+.kpi-card.c-blue::before   { background: var(--blue); }
+.kpi-card.c-pink::before   { background: var(--pink); }
+.kpi-card.c-yellow::before { background: var(--yellow); }
+.kpi-card.c-orange::before { background: var(--orange); }
+.kpi-card.c-teal::before   { background: var(--teal); }
+.kpi-card.c-muted::before  { background: var(--muted); }
+.kpi-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .7px; color: var(--muted); margin-bottom: 6px; }
+.kpi-value { font-family: var(--mono); font-size: 22px; font-weight: 600; color: var(--text); line-height: 1; }
+.kpi-sub { font-size: 11px; color: var(--muted); margin-top: 5px; display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+.kpi-target { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.kpi-delta { font-size: 10px; font-weight: 600; padding: 1px 6px; border-radius: 4px; }
+.kpi-delta.up   { color: var(--green); background: rgba(0,184,148,.1); }
+.kpi-delta.down { color: var(--pink);  background: rgba(253,121,168,.1); }
+.kpi-delta.flat { color: var(--muted); background: rgba(255,255,255,.06); }
+.vs-target-bar { margin-top: 8px; height: 3px; background: rgba(255,255,255,.07); border-radius: 2px; overflow: hidden; }
+.vs-target-fill { height: 100%; border-radius: 2px; transition: width .6s ease; }
+
+/* ── CONVERSION RATE CARDS ── */
+.rate-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 22px; }
+.rate-card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+  padding: 16px 20px; display: flex; align-items: flex-start; gap: 16px;
+  animation: fadeUp .4s ease both;
+}
+.rate-icon { font-size: 22px; flex-shrink: 0; margin-top: 2px; }
+.rate-body { flex: 1; min-width: 0; }
+.rate-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .7px; color: var(--muted); margin-bottom: 4px; }
+.rate-value { font-family: var(--mono); font-size: 28px; font-weight: 600; color: var(--text); line-height: 1; }
+.rate-sub { font-size: 11px; color: var(--muted); margin-top: 3px; }
+.rate-bar { margin-top: 8px; height: 4px; background: rgba(255,255,255,.07); border-radius: 2px; overflow: hidden; }
+.rate-bar-fill { height: 100%; border-radius: 2px; transition: width .6s ease; }
+.rate-extras { display: flex; gap: 12px; margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--border); }
+.rate-extra-item { flex: 1; }
+.rate-extra-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px; color: var(--muted); margin-bottom: 3px; }
+.rate-extra-value { font-family: var(--mono); font-size: 14px; font-weight: 600; color: var(--text); }
+
+/* ── CHART GRID ── */
+.chart-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; margin-bottom: 22px; }
+.chart-grid-2 { display: grid; grid-template-columns: 2fr 1fr; gap: 14px; margin-bottom: 22px; }
+.chart-grid-eq { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 22px; }
+.chart-card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+  padding: 20px; animation: fadeUp .4s ease both;
+}
+.chart-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; }
+.chart-title { font-size: 13px; font-weight: 600; color: var(--text); }
+.chart-sub { font-size: 11px; color: var(--muted); margin-top: 3px; }
+.chart-badge { font-size: 10px; font-weight: 600; padding: 3px 9px; border-radius: 10px; background: rgba(108,92,231,.15); color: var(--accent); border: 1px solid rgba(108,92,231,.2); font-family: var(--mono); white-space: nowrap; }
+
+/* ── FUNNEL ── */
+.funnel-stages { display: flex; flex-direction: column; gap: 10px; margin-top: 4px; }
+.funnel-stage { display: flex; align-items: center; gap: 10px; }
+.funnel-stage-label { font-size: 11px; font-weight: 600; color: var(--muted); width: 56px; flex-shrink: 0; font-family: var(--mono); }
+.funnel-bar-wrap { flex: 1; height: 24px; background: rgba(255,255,255,.04); border-radius: 4px; overflow: hidden; position: relative; }
+.funnel-bar-fill { height: 100%; border-radius: 4px; transition: width .7s ease; display: flex; align-items: center; padding-left: 8px; }
+.funnel-bar-count { font-size: 11px; font-weight: 600; font-family: var(--mono); color: #fff; white-space: nowrap; }
+.funnel-rate { font-size: 11px; font-weight: 600; font-family: var(--mono); width: 56px; flex-shrink: 0; text-align: right; }
+.funnel-arrow { font-size: 10px; color: var(--muted); text-align: center; padding-left: 66px; margin: -4px 0; }
+
+/* ── PRODUCT BREAKDOWN TABLE ── */
+.product-table { width: 100%; border-collapse: collapse; margin-top: 4px; }
+.product-table td { padding: 7px 10px; font-size: 12px; border-bottom: 1px solid rgba(255,255,255,.04); font-family: var(--mono); }
+.product-table tr:last-child td { border-bottom: none; }
+.product-table .prod-name { color: var(--muted); font-size: 11px; }
+.product-table .prod-mrr  { color: var(--text); font-weight: 600; }
+.prod-bar-cell { width: 120px; }
+.prod-bar-wrap { height: 6px; background: rgba(255,255,255,.06); border-radius: 3px; overflow: hidden; }
+.prod-bar-fill { height: 100%; border-radius: 3px; background: var(--accent); }
+
+/* ── SME MICRO RATIO ── */
+.micro-sme-wrap { display: flex; align-items: center; gap: 12px; margin-top: 8px; }
+.ratio-label { font-size: 10px; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: .6px; }
+.ratio-bar { flex: 1; height: 18px; border-radius: 4px; overflow: hidden; display: flex; }
+.ratio-micro { background: rgba(9,132,227,.7); display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; color: #fff; font-family: var(--mono); transition: width .6s ease; }
+.ratio-sme-part { background: rgba(108,92,231,.7); display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; color: #fff; font-family: var(--mono); transition: width .6s ease; }
+
+/* ── SECTION DIVIDER ── */
+.section-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .8px; color: var(--muted); margin-bottom: 12px; display: flex; align-items: center; gap: 10px; }
+.section-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+/* ── HIDDEN ELEMENTS ── */
+.upsell-only { display: none; }
+.sme-only    { display: none; }
+
+/* ── ABOUT SECTION ── */
+.about-intro { font-size: 13px; color: var(--muted); line-height: 1.7; margin-bottom: 4px; max-width: 820px; }
+.about-intro strong { color: var(--text); }
+.about-intro code { font-family: var(--mono); font-size: 11px; background: rgba(108,92,231,.12); padding: 1px 6px; border-radius: 3px; color: var(--accent); }
+.about-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 8px; }
+.about-card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+  padding: 16px 18px; animation: fadeUp .3s ease both;
+}
+.about-card-title { font-size: 12px; font-weight: 700; color: var(--text); margin-bottom: 8px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.about-card-body { font-size: 12px; color: var(--muted); line-height: 1.65; }
+.about-card-body strong { color: var(--text); font-weight: 600; }
+.about-card-body code { font-family: var(--mono); font-size: 10px; background: rgba(255,255,255,.06); padding: 1px 5px; border-radius: 3px; color: var(--yellow); }
+.about-card-body em { color: var(--accent); font-style: normal; }
+.about-card-source { margin-top: 10px; font-size: 10px; font-family: var(--mono); color: rgba(108,92,231,.7); background: rgba(108,92,231,.07); padding: 4px 8px; border-radius: 4px; border: 1px solid rgba(108,92,231,.15); }
+
+/* ── FOOTER ── */
+.dash-footer { text-align: center; padding: 20px; font-size: 11px; color: var(--muted); font-family: var(--mono); border-top: 1px solid var(--border); }
+.dash-footer span { color: var(--accent); }
+
+/* ── LOADING OVERLAY ── */
+.loading-overlay { position: fixed; inset: 0; background: rgba(13,15,26,.85); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 999; gap: 14px; transition: opacity .3s; }
+.loading-overlay.hidden { opacity: 0; pointer-events: none; }
+.loader-ring { width: 40px; height: 40px; border: 3px solid rgba(108,92,231,.2); border-top-color: var(--accent); border-radius: 50%; animation: spin .8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.loader-text { font-size: 13px; color: var(--muted); font-family: var(--mono); }
+.loader-step  { font-size: 11px; color: rgba(108,92,231,.7); font-family: var(--mono); }
+</style>
+</head>
+<body>
+
+<!-- Loading overlay -->
+<div class="loading-overlay" id="loading-overlay">
+  <div class="loader-ring"></div>
+  <div class="loader-text">Loading Marketing Intelligence...</div>
+  <div class="loader-step" id="loader-step">Fetching pipeline data</div>
+</div>
+
+<!-- Topbar -->
+<div class="topbar">
+  <div class="topbar-left">
+    <div class="logo-mark">MKTNG</div>
+    <div class="logo-sep"></div>
+    <div class="logo-sub">Marketing Intelligence Dashboard · Sprout Solutions</div>
+  </div>
+  <div class="topbar-right">
+    <div class="last-updated" id="last-updated">—</div>
+    <div class="live-badge"><div class="live-dot"></div>LIVE</div>
+    <button class="refresh-btn" id="refresh-btn" onclick="loadData()">↻ Refresh</button>
+  </div>
+</div>
+
+<!-- Config banner -->
+<div class="config-banner">
+  ⚙️ <strong>Demo Mode</strong> — Replace <code>CONFIG</code> with your Databricks credentials to connect live data.
+</div>
+
+<!-- Date Range Bar -->
+<div class="date-range-bar">
+  <span class="dr-label">Date Range</span>
+  <div class="dr-presets">
+    <button class="dr-btn" onclick="setDateRange('7d',this)">7D</button>
+    <button class="dr-btn" onclick="setDateRange('14d',this)">14D</button>
+    <button class="dr-btn active" onclick="setDateRange('30d',this)">30D</button>
+    <button class="dr-btn" onclick="setDateRange('90d',this)">90D</button>
+    <button class="dr-btn" onclick="setDateRange('custom',this)">Custom</button>
+  </div>
+  <div class="dr-sep"></div>
+  <div class="custom-dates" id="custom-dates">
+    <span>From</span>
+    <input type="date" class="date-input" id="date-from" value="2026-01-01">
+    <span>To</span>
+    <input type="date" class="date-input" id="date-to" id="date-to">
+    <button class="dr-apply-btn" onclick="applyCustomRange()">Apply</button>
+  </div>
+  <span class="date-range-display" id="date-range-display">Last 30 days</span>
+</div>
+
+<!-- View Tabs -->
+<div class="view-tabs">
+  <div class="view-tab active" onclick="setView('overall',this)">Overall</div>
+  <div class="view-tab" onclick="setView('sme',this)">SME</div>
+  <div class="view-tab" onclick="setView('ent',this)">ENT</div>
+  <div class="view-tab" onclick="setView('upsell',this)">Upsell</div>
+  <div class="view-tab" onclick="setView('about',this)">About</div>
+</div>
+
+<!-- Dashboard Body -->
+<div id="dash-content">
+<div class="dash-wrap">
+
+  <!-- Primary KPI Row -->
+  <div class="section-label">Pipeline & Revenue</div>
+  <div class="kpi-row" style="grid-template-columns:repeat(3,1fr);margin-bottom:12px">
+    <div class="kpi-card c-blue">
+      <div class="kpi-label" id="lbl-mql-tmrr">MQL TMRR vs Target</div>
+      <div class="kpi-value" id="kpi-mql-tmrr">—</div>
+      <div class="kpi-sub"><span class="kpi-target" id="kpi-mql-target">— target</span></div>
+      <div class="vs-target-bar"><div class="vs-target-fill" id="mql-target-bar" style="background:var(--blue);width:0%"></div></div>
+      <div style="margin-top:6px;font-size:10px;color:var(--muted)">Appt Scheduled · Initial Demo · Solutioning · Commercial Neg. · Committed</div>
+    </div>
+    <div class="kpi-card c-teal">
+      <div class="kpi-label" id="lbl-sql-tmrr">SQL TMRR</div>
+      <div class="kpi-value" id="kpi-sql-tmrr">—</div>
+      <div class="kpi-sub" id="kpi-sql-sub">Solutioning · Commercial Neg. · Committed</div>
+    </div>
+    <div class="kpi-card c-green">
+      <div class="kpi-label">Won MRR vs Target</div>
+      <div class="kpi-value" id="kpi-won-mrr">—</div>
+      <div class="kpi-sub"><span class="kpi-target" id="kpi-won-target">— target</span></div>
+      <div class="vs-target-bar"><div class="vs-target-fill" id="won-target-bar" style="background:var(--green);width:0%"></div></div>
+    </div>
+  </div>
+
+  <!-- Secondary KPI Row -->
+  <div class="kpi-row" style="margin-bottom:22px">
+    <div class="kpi-card c-pink">
+      <div class="kpi-label">EmFi MRR</div>
+      <div class="kpi-value" id="kpi-emfi">—</div>
+      <div class="kpi-sub">embedded finance</div>
+    </div>
+    <div class="kpi-card c-yellow">
+      <div class="kpi-label">Closed-Won Revenue</div>
+      <div class="kpi-value" id="kpi-cw-rev">—</div>
+      <div class="kpi-sub" id="kpi-cw-sub">this period</div>
+    </div>
+    <div class="kpi-card c-orange">
+      <div class="kpi-label">Avg Deal Value</div>
+      <div class="kpi-value" id="kpi-adv">—</div>
+      <div class="kpi-sub">per won deal</div>
+    </div>
+    <div class="kpi-card c-muted">
+      <div class="kpi-label">Deals Velocity</div>
+      <div class="kpi-value" id="kpi-velocity">—</div>
+      <div class="kpi-sub">avg days MQL → Won</div>
+    </div>
+  </div>
+
+  <!-- SME-only: Micro vs SME Ratio -->
+  <div class="sme-only" id="sme-ratio-section" style="margin-bottom:22px">
+    <div class="section-label">Micro vs SME Split</div>
+    <div class="chart-card">
+      <div class="chart-header">
+        <div>
+          <div class="chart-title">Micro vs SME Ratio</div>
+          <div class="chart-sub">Deal count distribution within SME segment</div>
+        </div>
+        <div class="chart-badge">silver_deals</div>
+      </div>
+      <div class="micro-sme-wrap">
+        <span class="ratio-label">Micro</span>
+        <div class="ratio-bar">
+          <div class="ratio-micro" id="ratio-micro" style="width:60%">60%</div>
+          <div class="ratio-sme-part" id="ratio-sme" style="width:40%">40%</div>
+        </div>
+        <span class="ratio-label">SME</span>
+      </div>
+      <div style="display:flex;gap:16px;margin-top:10px">
+        <span style="font-size:11px;color:var(--muted)">Micro: <span id="micro-count" style="color:var(--blue);font-family:var(--mono);font-weight:600">—</span> deals</span>
+        <span style="font-size:11px;color:var(--muted)">SME: <span id="sme-count" style="color:var(--accent);font-family:var(--mono);font-weight:600">—</span> deals</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Upsell-only: Per Product TMRR -->
+  <div class="upsell-only" id="product-section" style="margin-bottom:22px">
+    <div class="section-label">TMRR Per Product</div>
+    <div class="chart-card">
+      <div class="chart-header">
+        <div>
+          <div class="chart-title">Won MRR by Product</div>
+          <div class="chart-sub">Upsell pipeline breakdown by product line</div>
+        </div>
+        <div class="chart-badge">silver_deals</div>
+      </div>
+      <table class="product-table" id="product-table"></table>
+    </div>
+  </div>
+
+  <!-- Conversion Rates -->
+  <div class="section-label">Conversion Rates <span style="font-size:10px;color:var(--muted);font-weight:400;text-transform:none;letter-spacing:0">· based on create_date · MKT Inbound</span></div>
+  <div class="rate-row">
+    <div class="rate-card">
+      <div class="rate-icon">⚡</div>
+      <div class="rate-body">
+        <div class="rate-label" id="lbl-rate1">MQL → SQL</div>
+        <div class="rate-value" id="rate-1">—</div>
+        <div class="rate-sub" id="rate-1-sub">—</div>
+        <div class="rate-bar"><div class="rate-bar-fill" id="rate-1-bar" style="background:var(--teal);width:0%"></div></div>
+      </div>
+    </div>
+    <div class="rate-card">
+      <div class="rate-icon">🏆</div>
+      <div class="rate-body">
+        <div class="rate-label" id="lbl-rate2">SQL → Won</div>
+        <div class="rate-value" id="rate-2">—</div>
+        <div class="rate-sub" id="rate-2-sub">—</div>
+        <div class="rate-bar"><div class="rate-bar-fill" id="rate-2-bar" style="background:var(--green);width:0%"></div></div>
+        <div class="rate-extras">
+          <div class="rate-extra-item">
+            <div class="rate-extra-label">Won MRR</div>
+            <div class="rate-extra-value" id="rate-won-mrr-cd">—</div>
+          </div>
+          <div class="rate-extra-item">
+            <div class="rate-extra-label">EmFi MRR</div>
+            <div class="rate-extra-value" id="rate-emfi-mrr-cd">—</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Charts Row 1: Funnel + MQL by Source -->
+  <div class="section-label">Funnel & Lead Sources</div>
+  <div class="chart-grid-eq" style="margin-bottom:22px">
+
+    <!-- Conversion Funnel -->
+    <div class="chart-card">
+      <div class="chart-header">
+        <div>
+          <div class="chart-title">Conversion Funnel</div>
+          <div class="chart-sub" id="funnel-sub">Lead stages · selected period</div>
+        </div>
+        <div class="chart-badge">silver_deals</div>
+      </div>
+      <div class="funnel-stages" id="funnel-stages"></div>
+    </div>
+
+    <!-- MQL by Channel Source -->
+    <div class="chart-card">
+      <div class="chart-header">
+        <div>
+          <div class="chart-title" id="source-chart-title">Created Leads (MQL) by Channel Source</div>
+          <div class="chart-sub">Original Traffic Source · selected period</div>
+        </div>
+        <div class="chart-badge">silver_deals</div>
+      </div>
+      <div style="position:relative;height:220px"><canvas id="chart-source"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Charts Row 2: MQL TMRR vs Target -->
+  <div class="section-label">MRR Trend</div>
+  <div class="chart-card" style="margin-bottom:22px">
+    <div class="chart-header">
+      <div>
+        <div class="chart-title">Won MRR vs Target — Monthly Trend</div>
+        <div class="chart-sub" id="mrr-chart-sub">All pipelines · close_date · Jan–Dec 2024</div>
+      </div>
+      <div class="chart-badge">gold_monthly_exec_summary</div>
+    </div>
+    <div style="position:relative"><canvas id="chart-mrr" height="75"></canvas></div>
+  </div>
+
+</div>
+</div><!-- #dash-content -->
+
+<!-- About Section (hidden by default) -->
+<div id="about-section" style="display:none">
+  <div class="dash-wrap">
+
+    <div class="section-label">Dashboard Overview</div>
+    <div class="about-intro">
+      <p>The <strong>Marketing Intelligence Dashboard</strong> tracks the MKT Inbound funnel end-to-end — from pipeline build-up (TMRR) through conversion to closed-won revenue. All views filter on <code>department_source_clean = 'MKT Inbound'</code> and exclude renewal deals.</p>
+    </div>
+
+    <div class="section-label" style="margin-top:24px">Metric Definitions</div>
+    <div class="about-grid">
+
+      <div class="about-card">
+        <div class="about-card-title">MQL TMRR</div>
+        <div class="about-card-body">Theoretical MRR — sum of line item MRR for active pipeline deals projected to close in a future month. Covers stages: <strong>Appointment Scheduled, Initial Demo Done, Solutioning, Commercial Negotiation, Committed Accounts</strong>. Deals with a past projected close date return 0 (slipped).</div>
+        <div class="about-card-source">mrr_in_pipeline · projected_close_date</div>
+      </div>
+
+      <div class="about-card">
+        <div class="about-card-title">SQL TMRR</div>
+        <div class="about-card-body">Same as MQL TMRR but restricted to later-stage deals: <strong>Solutioning, Commercial Negotiation, Committed Accounts</strong>. Represents pipeline that has passed initial qualification.</div>
+        <div class="about-card-source">mrr_in_pipeline · projected_close_date</div>
+      </div>
+
+      <div class="about-card">
+        <div class="about-card-title">Won MRR vs Target</div>
+        <div class="about-card-body">Sum of MRR for deals in <strong>Customer</strong> stage (closed-won), excluding renewals. Compared against monthly targets. The progress bar turns green ≥100%, yellow ≥80%, pink below 80%.</div>
+        <div class="about-card-source">won_mrr · close_date</div>
+      </div>
+
+      <div class="about-card">
+        <div class="about-card-title">EmFi MRR</div>
+        <div class="about-card-body">Embedded Finance MRR from won deals. Subset of Won MRR attributable to embedded financial products (e.g. EWA, loans, insurance).</div>
+        <div class="about-card-source">won_ef_mrr · close_date</div>
+      </div>
+
+      <div class="about-card">
+        <div class="about-card-title">Closed-Won Revenue</div>
+        <div class="about-card-body">Total deal amount for all won deals in the period. Includes one-time and recurring components (won_amount), not just MRR.</div>
+        <div class="about-card-source">won_amount · close_date</div>
+      </div>
+
+      <div class="about-card">
+        <div class="about-card-title">Avg Deal Value</div>
+        <div class="about-card-body">Average MRR per won deal: <code>won_mrr ÷ won_deals</code>. Useful for tracking deal size trends and mix shift between SME and ENT.</div>
+        <div class="about-card-source">avg_deal_size · close_date</div>
+      </div>
+
+      <div class="about-card">
+        <div class="about-card-title">Deals Velocity</div>
+        <div class="about-card-body">Average number of days from deal creation to close for won deals. Only includes deals with an availed product (joined to silver_line_items where product_status = 'Availed').</div>
+        <div class="about-card-source">avg_deal_velocity · close_date</div>
+      </div>
+
+      <div class="about-card">
+        <div class="about-card-title">MQL → SQL Rate</div>
+        <div class="about-card-body">Percentage of qualified leads (<code>qualified_lead = 'Yes'</code>) that progressed past MQL stage (<code>client_journey_stage ≠ 'MQL'</code>). Both counts are based on <strong>create_date</strong>.</div>
+        <div class="about-card-source">sql_pct = sales_qualified_leads ÷ qualified_leads · create_date</div>
+      </div>
+
+      <div class="about-card">
+        <div class="about-card-title">SQL → Won Rate</div>
+        <div class="about-card-body">Win rate of deals that reached SQL stage: <code>won_deals ÷ (won_deals + lost_deals)</code>. Based on <strong>create_date</strong> to follow the cohort story.</div>
+        <div class="about-card-source">win_rate · create_date</div>
+      </div>
+
+      <div class="about-card">
+        <div class="about-card-title">Won MRR & EmFi MRR (create_date)</div>
+        <div class="about-card-body">Won MRR and EmFi MRR attributed to deals <em>created</em> in the selected period (cohort view). Differs from the KPI cards above which use close_date. Used alongside SQL → Won to tell the complete funnel story.</div>
+        <div class="about-card-source">won_mrr, won_ef_mrr · create_date</div>
+      </div>
+
+      <div class="about-card">
+        <div class="about-card-title">Micro vs SME Ratio <span style="font-size:10px;color:var(--blue);font-family:var(--mono);font-weight:400">SME view only</span></div>
+        <div class="about-card-body">Distribution of won deals between Micro and SME sub-segments within the SME view. Sourced from segment mapping in silver_deals.</div>
+        <div class="about-card-source">segment · create_date</div>
+      </div>
+
+      <div class="about-card">
+        <div class="about-card-title">TMRR Per Product <span style="font-size:10px;color:var(--teal);font-family:var(--mono);font-weight:400">Upsell view only</span></div>
+        <div class="about-card-body">Won MRR broken down by product line (HR & Payroll, Employee Benefits, Workforce, Time & Attendance, etc.) for the PH Upsell Pipeline with MKT Inbound source.</div>
+        <div class="about-card-source">won_mrr by product · close_date</div>
+      </div>
+
+    </div>
+
+    <div class="section-label" style="margin-top:24px">Views & Filters</div>
+    <div class="about-grid" style="grid-template-columns:repeat(2,1fr)">
+      <div class="about-card">
+        <div class="about-card-title">View Tabs</div>
+        <div class="about-card-body">
+          <strong>Overall</strong> — all segments combined<br>
+          <strong>SME</strong> — Micro + SME segment, adds Micro vs SME ratio<br>
+          <strong>ENT</strong> — Mid-Market / Enterprise segment<br>
+          <strong>Upsell</strong> — PH Upsell Pipeline, MKT Inbound only; uses UQL instead of MQL
+        </div>
+      </div>
+      <div class="about-card">
+        <div class="about-card-title">Date Range Filter</div>
+        <div class="about-card-body">
+          <strong>7D / 14D / 30D / 90D</strong> — rolling preset windows backed by pre-aggregated demo data.<br>
+          <strong>Custom</strong> — picks any date range; KPI values are scaled proportionally from the 30-day baseline. Monthly trend chart always shows the full 2024 view in demo mode. In live mode all figures query Databricks with the exact date bounds.
+        </div>
+      </div>
+    </div>
+
+    <div class="section-label" style="margin-top:24px">Data Sources</div>
+    <div class="about-grid">
+
+      <div class="about-card">
+        <div class="about-card-title">gold_monthly_exec_summary</div>
+        <div class="about-card-body">Pre-aggregated gold table rebuilt daily. Feeds <strong>Won MRR, EmFi MRR, CW Rev, Avg Deal Value, Velocity</strong> (all close_date), plus the monthly trend chart and MQL/SQL counts.</div>
+        <div class="about-card-source">shared.revops.gold_monthly_exec_summary</div>
+      </div>
+
+      <div class="about-card">
+        <div class="about-card-title">gold_targets</div>
+        <div class="about-card-body">Monthly quota targets by segment and pipeline. Feeds the <strong>MQL TMRR vs Target</strong> and <strong>Won MRR vs Target</strong> progress bars and percentage attainment.</div>
+        <div class="about-card-source">shared.revops.gold_targets</div>
+      </div>
+
+      <div class="about-card">
+        <div class="about-card-title">silver_deals</div>
+        <div class="about-card-body">Deal-level table from HubSpot. Source for <strong>MQL/SQL funnel counts, conversion rates, Won MRR (create_date cohort), EmFi MRR (create_date cohort)</strong>, and the <strong>MQL by Channel Source</strong> chart. Filtered by <code>department_source_clean = 'MKT Inbound'</code>.</div>
+        <div class="about-card-source">shared.revops.silver_deals</div>
+      </div>
+
+      <div class="about-card">
+        <div class="about-card-title">silver_line_items</div>
+        <div class="about-card-body">Line-item MRR for each deal. Joined with <code>silver_deals</code> to compute <strong>MQL TMRR</strong> and <strong>SQL TMRR</strong> — summing <code>mrr_in_pipeline</code> for active pipeline stages with a future <code>projected_close_date</code>.</div>
+        <div class="about-card-source">shared.revops.silver_line_items</div>
+      </div>
+
+      <div class="about-card">
+        <div class="about-card-title">silver_company</div>
+        <div class="about-card-body">Company / account attributes (industry, employee count, region). Used for enrichment and segment-level breakdowns. Referenced in the SME Micro vs SME ratio and ENT deal profiling.</div>
+        <div class="about-card-source">shared.revops.silver_company</div>
+      </div>
+
+      <div class="about-card">
+        <div class="about-card-title">gold_metrics_datapedia</div>
+        <div class="about-card-body">Metric definitions and business glossary maintained by the RevOps team. Provides official definitions for all KPIs shown in this dashboard. Referenced as the source of truth for any metric-naming discrepancies.</div>
+        <div class="about-card-source">shared.revops.gold_metrics_datapedia</div>
+      </div>
+
+    </div>
+
+  </div>
+</div><!-- #about-section -->
+
+<div class="dash-footer">
+  Generated by <span>Claude</span> · Marketing Intelligence Dashboard · Connected to <span>shared.revops</span>
+</div>
+
+<script>
+// ─────────────────────────────────────────────
+// CONFIG
+// ─────────────────────────────────────────────
+const CONFIG = {
+  host:     'adb-xxxxxxxxxxxxxxxxx.azuredatabricks.net',
+  httpPath: '/sql/1.0/warehouses/xxxxxxxxxxxxxxxx',
+  token:    'dapi••••••••••••••••••••••••••••••••',
+  schema:   'shared.revops',
+  demo:     true
+};
+
+// ─────────────────────────────────────────────
+// DEMO DATA  (keyed by view → date_range)
+// funnel: [mql, sql, won]  — all create_date based, MKT Inbound
+// rates:  [mql_to_sql%, sql_to_won%]  — create_date based
+// won_mrr_cd / emfi_mrr_cd: create_date cohort values
+// mql_tmrr: Appt Scheduled + Initial Demo + Solutioning + Commercial Neg. + Committed
+// sql_tmrr: Solutioning + Commercial Neg. + Committed
+// ─────────────────────────────────────────────
+const DEMO = {
+  overall: {
+    '7d':  { mql_tmrr:700000,  mql_target:750000,  sql_tmrr:420000,  won_mrr:600000,  won_target:650000,  emfi_mrr:95000,  cw_rev:3625000, adv:48500, velocity:32, funnel:[68,53,22],  rates:[78,41], won_mrr_cd:510000,  emfi_mrr_cd:80000,  sources:{Organic:52,Events:46,Paid:36,Email:24,Referral:19,Social:11,Direct:9} },
+    '14d': { mql_tmrr:1400000, mql_target:1500000, sql_tmrr:840000,  won_mrr:1200000, won_target:1300000, emfi_mrr:190000, cw_rev:7250000, adv:48500, velocity:32, funnel:[136,106,44], rates:[78,41], won_mrr_cd:1020000, emfi_mrr_cd:162000, sources:{Organic:104,Events:92,Paid:71,Email:49,Referral:38,Social:22,Direct:18} },
+    '30d': { mql_tmrr:2800000, mql_target:3000000, sql_tmrr:1680000, won_mrr:2400000, won_target:2600000, emfi_mrr:380000, cw_rev:14500000,adv:48500, velocity:32, funnel:[273,213,87],  rates:[78,41], won_mrr_cd:2040000, emfi_mrr_cd:323000, sources:{Organic:210,Events:185,Paid:142,Email:98,Referral:76,Social:45,Direct:38} },
+    '90d': { mql_tmrr:7800000, mql_target:8200000, sql_tmrr:4680000, won_mrr:6700000, won_target:7200000, emfi_mrr:1060000,cw_rev:40000000,adv:48500, velocity:32, funnel:[770,600,246], rates:[78,41], won_mrr_cd:5695000, emfi_mrr_cd:901000, sources:{Organic:588,Events:518,Paid:397,Email:274,Referral:213,Social:126,Direct:106} },
+    monthly:[
+      {m:'Jan',won:1820000,target:1700000},{m:'Feb',won:1650000,target:1700000},{m:'Mar',won:2100000,target:1900000},
+      {m:'Apr',won:1980000,target:2000000},{m:'May',won:2250000,target:2100000},{m:'Jun',won:2380000,target:2200000},
+      {m:'Jul',won:2100000,target:2300000},{m:'Aug',won:2420000,target:2300000},{m:'Sep',won:2680000,target:2400000},
+      {m:'Oct',won:2550000,target:2500000},{m:'Nov',won:2790000,target:2600000},{m:'Dec',won:3020000,target:2700000},
+    ]
+  },
+  sme: {
+    '7d':  { mql_tmrr:350000,  mql_target:375000,  sql_tmrr:210000,  won_mrr:275000,  won_target:300000,  emfi_mrr:45000,  cw_rev:1800000, adv:32000, velocity:24, funnel:[39,30,13],  rates:[76,44], won_mrr_cd:234000,  emfi_mrr_cd:38000,  sources:{Organic:30,Events:28,Paid:22,Email:15,Referral:12,Social:7,Direct:5}, micro_pct:60,micro_count:78,sme_count:52 },
+    '14d': { mql_tmrr:700000,  mql_target:750000,  sql_tmrr:420000,  won_mrr:550000,  won_target:600000,  emfi_mrr:90000,  cw_rev:3600000, adv:32000, velocity:24, funnel:[78,59,26],  rates:[76,44], won_mrr_cd:468000,  emfi_mrr_cd:77000,  sources:{Organic:60,Events:55,Paid:43,Email:30,Referral:24,Social:14,Direct:10}, micro_pct:60,micro_count:156,sme_count:104 },
+    '30d': { mql_tmrr:1400000, mql_target:1500000, sql_tmrr:840000,  won_mrr:1100000, won_target:1200000, emfi_mrr:180000, cw_rev:7200000, adv:32000, velocity:24, funnel:[156,119,52], rates:[76,44], won_mrr_cd:935000,  emfi_mrr_cd:153000, sources:{Organic:118,Events:108,Paid:84,Email:58,Referral:46,Social:28,Direct:20}, micro_pct:60,micro_count:312,sme_count:208 },
+    '90d': { mql_tmrr:3900000, mql_target:4200000, sql_tmrr:2340000, won_mrr:3100000, won_target:3400000, emfi_mrr:504000, cw_rev:20200000,adv:32000, velocity:24, funnel:[440,334,147], rates:[76,44], won_mrr_cd:2635000, emfi_mrr_cd:428000, sources:{Organic:330,Events:302,Paid:235,Email:162,Referral:129,Social:78,Direct:56}, micro_pct:60,micro_count:875,sme_count:584 },
+    monthly:[
+      {m:'Jan',won:693000,target:720000},{m:'Feb',won:628000,target:720000},{m:'Mar',won:798000,target:780000},
+      {m:'Apr',won:752000,target:800000},{m:'May',won:855000,target:840000},{m:'Jun',won:904000,target:880000},
+      {m:'Jul',won:798000,target:920000},{m:'Aug',won:920000,target:920000},{m:'Sep',won:1018000,target:960000},
+      {m:'Oct',won:980000,target:1000000},{m:'Nov',won:1050000,target:1040000},{m:'Dec',won:1140000,target:1080000},
+    ]
+  },
+  ent: {
+    '7d':  { mql_tmrr:275000,  mql_target:300000,  sql_tmrr:165000,  won_mrr:245000,  won_target:275000,  emfi_mrr:38000,  cw_rev:1450000, adv:92000, velocity:58, funnel:[22,18,6],   rates:[82,35], won_mrr_cd:208000,  emfi_mrr_cd:32000,  sources:{Organic:18,Events:20,Paid:12,Email:8,Referral:10,Social:4,Direct:3} },
+    '14d': { mql_tmrr:550000,  mql_target:600000,  sql_tmrr:330000,  won_mrr:490000,  won_target:550000,  emfi_mrr:75000,  cw_rev:2900000, adv:92000, velocity:58, funnel:[45,37,13],  rates:[82,35], won_mrr_cd:417000,  emfi_mrr_cd:64000,  sources:{Organic:36,Events:40,Paid:24,Email:16,Referral:20,Social:8,Direct:6} },
+    '30d': { mql_tmrr:1100000, mql_target:1200000, sql_tmrr:660000,  won_mrr:980000,  won_target:1100000, emfi_mrr:150000, cw_rev:5800000, adv:92000, velocity:58, funnel:[90,74,26],  rates:[82,35], won_mrr_cd:833000,  emfi_mrr_cd:128000, sources:{Organic:72,Events:80,Paid:48,Email:32,Referral:40,Social:16,Direct:12} },
+    '90d': { mql_tmrr:3100000, mql_target:3300000, sql_tmrr:1860000, won_mrr:2750000, won_target:3000000, emfi_mrr:420000, cw_rev:16200000,adv:92000, velocity:58, funnel:[252,207,72], rates:[82,35], won_mrr_cd:2338000, emfi_mrr_cd:357000, sources:{Organic:202,Events:224,Paid:134,Email:90,Referral:112,Social:45,Direct:34} },
+    monthly:[
+      {m:'Jan',won:876000,target:800000},{m:'Feb',won:793000,target:800000},{m:'Mar',won:1008000,target:860000},
+      {m:'Apr',won:950000,target:900000},{m:'May',won:1080000,target:940000},{m:'Jun',won:1142000,target:980000},
+      {m:'Jul',won:1008000,target:1020000},{m:'Aug',won:1161000,target:1020000},{m:'Sep',won:1286000,target:1060000},
+      {m:'Oct',won:1200000,target:1100000},{m:'Nov',won:1380000,target:1140000},{m:'Dec',won:1480000,target:1200000},
+    ]
+  },
+  upsell: {
+    // funnel: [uql, sql, won] — UQL replaces MQL for upsell
+    '7d':  { mql_tmrr:155000,  mql_target:175000,  sql_tmrr:105000,  won_mrr:130000,  won_target:150000,  emfi_mrr:24000,  cw_rev:700000,  adv:28000, velocity:18, funnel:[29,20,10],  rates:[69,52], won_mrr_cd:110000,  emfi_mrr_cd:20000,  sources:{'Email':18,'Events':12,'Inbound':9,'Referral':6},  products:{'HR & Payroll':45000,'Employee Benefits':35000,'Workforce':30000,'Time & Attendance':21000,'Other':24000} },
+    '14d': { mql_tmrr:310000,  mql_target:350000,  sql_tmrr:210000,  won_mrr:260000,  won_target:300000,  emfi_mrr:48000,  cw_rev:1400000, adv:28000, velocity:18, funnel:[59,41,21],  rates:[69,52], won_mrr_cd:221000,  emfi_mrr_cd:41000,  sources:{'Email':36,'Events':24,'Inbound':18,'Referral':12}, products:{'HR & Payroll':90000,'Employee Benefits':70000,'Workforce':60000,'Time & Attendance':42000,'Other':48000} },
+    '30d': { mql_tmrr:620000,  mql_target:700000,  sql_tmrr:420000,  won_mrr:520000,  won_target:600000,  emfi_mrr:95000,  cw_rev:2800000, adv:28000, velocity:18, funnel:[117,81,42], rates:[69,52], won_mrr_cd:442000,  emfi_mrr_cd:81000,  sources:{'Email':72,'Events':48,'Inbound':35,'Referral':25}, products:{'HR & Payroll':180000,'Employee Benefits':140000,'Workforce':120000,'Time & Attendance':85000,'Other':95000} },
+    '90d': { mql_tmrr:1750000, mql_target:2000000, sql_tmrr:1185000, won_mrr:1460000, won_target:1700000, emfi_mrr:266000, cw_rev:7900000, adv:28000, velocity:18, funnel:[332,229,119],rates:[69,52], won_mrr_cd:1241000, emfi_mrr_cd:226000, sources:{'Email':204,'Events':136,'Inbound':99,'Referral':71}, products:{'HR & Payroll':507000,'Employee Benefits':394000,'Workforce':338000,'Time & Attendance':240000,'Other':268000} },
+    monthly:[
+      {m:'Jan',won:251000,target:280000},{m:'Feb',won:229000,target:280000},{m:'Mar',won:294000,target:300000},
+      {m:'Apr',won:278000,target:320000},{m:'May',won:315000,target:340000},{m:'Jun',won:334000,target:360000},
+      {m:'Jul',won:294000,target:380000},{m:'Aug',won:339000,target:380000},{m:'Sep',won:376000,target:400000},
+      {m:'Oct',won:370000,target:420000},{m:'Nov',won:360000,target:440000},{m:'Dec',won:400000,target:460000},
+    ]
+  }
+};
+
+// ─────────────────────────────────────────────
+// STATE
+// ─────────────────────────────────────────────
+const STATE = { view: 'overall', range: '30d', customFrom: null, customTo: null };
+const LIVE  = {};   // populated by fetchLiveData when CONFIG.demo = false
+
+const RANGE_LABELS = { '7d':'Last 7 days', '14d':'Last 14 days', '30d':'Last 30 days', '90d':'Last 90 days' };
+
+// ─────────────────────────────────────────────
+// DATABRICKS LIVE QUERY INFRASTRUCTURE
+// Tables used:
+//   gold_monthly_exec_summary → Won MRR/EmFi/CW Rev/Velocity (close_date), monthly trend
+//   gold_targets              → MQL target, Won MRR target
+//   silver_deals              → MQL/SQL funnel (create_date), channel source, win rates
+//   silver_line_items         → MQL TMRR, SQL TMRR (joined with silver_deals on stage)
+//   silver_company            → company enrichment (segment profiling)
+//   gold_metrics_datapedia    → metric definitions (reference, not queried at runtime)
+// ─────────────────────────────────────────────
+async function runDatabricksQuery(sql) {
+  const url  = `https://${CONFIG.host}/api/2.0/sql/statements`;
+  const resp = await fetch(url, {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${CONFIG.token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ warehouse_id: CONFIG.httpPath.split('/').pop(), statement: sql, wait_timeout: '30s' })
+  });
+  if (!resp.ok) throw new Error(`Databricks API ${resp.status}`);
+  const data = await resp.json();
+  const cols = data.manifest?.schema?.columns?.map(c => c.name) || [];
+  return (data.result?.data_array || []).map(row => Object.fromEntries(cols.map((c, i) => [c, row[i]])));
+}
+
+function segmentClause(view, alias) {
+  const p = alias ? alias + '.' : '';
+  if (view === 'sme')    return `AND ${p}segment IN ('Micro','SME')`;
+  if (view === 'ent')    return `AND ${p}segment IN ('Mid-Market','Enterprise','ENT')`;
+  if (view === 'upsell') return `AND ${p}pipeline_name = 'PH Upsell Pipeline'`;
+  return '';
+}
+
+async function fetchLiveData(view, from, to) {
+  const sc = CONFIG.schema;
+  const sg  = segmentClause(view);
+  const sgD = segmentClause(view, 'd');
+
+  const [kpi, tgt, cd, tmrr, src, mly] = await Promise.all([
+
+    // gold_monthly_exec_summary → close_date KPIs
+    runDatabricksQuery(`
+      SELECT SUM(qualified_leads) AS mql_count, SUM(sales_qualified_leads) AS sql_count,
+             SUM(won_deals) AS won_deals, SUM(lost_deals) AS lost_deals,
+             SUM(won_mrr) AS won_mrr, SUM(won_ef_mrr) AS emfi_mrr,
+             SUM(won_amount) AS cw_rev, AVG(avg_deal_size) AS adv, AVG(avg_deal_velocity) AS velocity
+      FROM ${sc}.gold_monthly_exec_summary
+      WHERE department_source_clean = 'MKT Inbound'
+        AND metric_month BETWEEN '${from}' AND '${to}' ${sg}`),
+
+    // gold_targets → quota targets
+    runDatabricksQuery(`
+      SELECT SUM(mql_target) AS mql_target, SUM(won_mrr_target) AS won_target
+      FROM ${sc}.gold_targets
+      WHERE department_source_clean = 'MKT Inbound'
+        AND target_month BETWEEN '${from}' AND '${to}' ${sg}`),
+
+    // silver_deals → create_date cohort (funnel counts, won_mrr_cd, emfi_mrr_cd)
+    runDatabricksQuery(`
+      SELECT COUNT(CASE WHEN qualified_lead = 'Yes' THEN 1 END) AS mql,
+             COUNT(CASE WHEN qualified_lead = 'Yes' AND client_journey_stage != 'MQL' THEN 1 END) AS sql_cnt,
+             COUNT(CASE WHEN client_journey_stage = 'Customer' THEN 1 END) AS won,
+             SUM(CASE WHEN client_journey_stage = 'Customer' THEN mrr ELSE 0 END) AS won_mrr_cd,
+             SUM(CASE WHEN client_journey_stage = 'Customer' THEN ef_mrr ELSE 0 END) AS emfi_mrr_cd
+      FROM ${sc}.silver_deals
+      WHERE department_source_clean = 'MKT Inbound'
+        AND CAST(create_date AS DATE) BETWEEN '${from}' AND '${to}' ${sg}`),
+
+    // silver_line_items + silver_deals → TMRR by pipeline stage
+    runDatabricksQuery(`
+      SELECT
+        SUM(CASE WHEN d.client_journey_stage IN (
+              'Appointment Scheduled','Initial Demo Done','Solutioning',
+              'Commercial Negotiation','Committed Accounts')
+            THEN li.mrr_in_pipeline ELSE 0 END) AS mql_tmrr,
+        SUM(CASE WHEN d.client_journey_stage IN (
+              'Solutioning','Commercial Negotiation','Committed Accounts')
+            THEN li.mrr_in_pipeline ELSE 0 END) AS sql_tmrr
+      FROM ${sc}.silver_line_items li
+      JOIN ${sc}.silver_deals d ON li.deal_id = d.deal_id
+      WHERE d.department_source_clean = 'MKT Inbound'
+        AND li.projected_close_date >= CURRENT_DATE() ${sgD}`),
+
+    // silver_deals → MQL by channel source (create_date)
+    runDatabricksQuery(`
+      SELECT original_traffic_source AS src, COUNT(*) AS cnt
+      FROM ${sc}.silver_deals
+      WHERE department_source_clean = 'MKT Inbound'
+        AND qualified_lead = 'Yes'
+        AND CAST(create_date AS DATE) BETWEEN '${from}' AND '${to}' ${sg}
+      GROUP BY src ORDER BY cnt DESC LIMIT 10`),
+
+    // gold_monthly_exec_summary → full-year monthly trend
+    runDatabricksQuery(`
+      SELECT DATE_FORMAT(metric_month, 'MMM') AS m,
+             SUM(won_mrr) AS won, SUM(won_mrr_target) AS target
+      FROM ${sc}.gold_monthly_exec_summary
+      WHERE department_source_clean = 'MKT Inbound'
+        AND YEAR(metric_month) = YEAR(CURRENT_DATE()) ${sg}
+      GROUP BY metric_month ORDER BY metric_month ASC`)
+  ]);
+
+  const k = kpi[0]||{}, t = tgt[0]||{}, c = cd[0]||{}, tm = tmrr[0]||{};
+  const mqlN = +c.mql||0, sqlN = +c.sql_cnt||0, wonN = +c.won||0;
+  const wD = +k.won_deals||0, lD = +k.lost_deals||0;
+  return {
+    mql_tmrr:    +tm.mql_tmrr||0,   mql_target:  +t.mql_target||0,
+    sql_tmrr:    +tm.sql_tmrr||0,
+    won_mrr:     +k.won_mrr||0,     won_target:  +t.won_target||0,
+    emfi_mrr:    +k.emfi_mrr||0,    cw_rev:      +k.cw_rev||0,
+    adv:         +k.adv||0,         velocity:    Math.round(+k.velocity||0),
+    funnel:      [mqlN, sqlN, wonN],
+    rates:       [mqlN > 0 ? Math.round(sqlN/mqlN*100) : 0,
+                  (wD+lD) > 0 ? Math.round(wD/(wD+lD)*100) : 0],
+    won_mrr_cd:  +c.won_mrr_cd||0,  emfi_mrr_cd: +c.emfi_mrr_cd||0,
+    sources:     Object.fromEntries(src.map(r => [r.src||'Unknown', +r.cnt])),
+    monthly:     mly.map(r => ({ m: r.m, won: +r.won||0, target: +r.target||0 }))
+  };
+}
+
+// ─────────────────────────────────────────────
+// DATE RANGE CONTROLS
+// ─────────────────────────────────────────────
+function setDateRange(range, btn) {
+  STATE.range = range;
+  document.querySelectorAll('.dr-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  const customEl = document.getElementById('custom-dates');
+  if (range === 'custom') {
+    customEl.classList.add('visible');
+    return;
+  }
+  customEl.classList.remove('visible');
+  document.getElementById('date-range-display').textContent = RANGE_LABELS[range];
+  if (!CONFIG.demo) {
+    const today = new Date();
+    const days  = range === '7d' ? 7 : range === '14d' ? 14 : range === '30d' ? 30 : 90;
+    STATE.customFrom = new Date(today - days * 86400000).toISOString().split('T')[0];
+    STATE.customTo   = today.toISOString().split('T')[0];
+    loadData();
+  } else {
+    render();
+  }
+}
+
+function applyCustomRange() {
+  const from = document.getElementById('date-from').value;
+  const to   = document.getElementById('date-to').value;
+  if (!from || !to) return;
+  STATE.customFrom = from;
+  STATE.customTo   = to;
+  const fmtDate = s => new Date(s + 'T00:00:00').toLocaleDateString('en-PH',{month:'short',day:'numeric',year:'numeric'});
+  document.getElementById('date-range-display').textContent = `${fmtDate(from)} – ${fmtDate(to)}`;
+  if (!CONFIG.demo) { loadData(); } else { render(); }
+}
+
+function getDataForRange() {
+  if (!CONFIG.demo && LIVE[STATE.view]) return LIVE[STATE.view];
+  if (STATE.range !== 'custom') return DEMO[STATE.view][STATE.range];
+  if (!STATE.customFrom || !STATE.customTo) return DEMO[STATE.view]['30d'];
+  const days = Math.max(1, Math.round((new Date(STATE.customTo) - new Date(STATE.customFrom)) / 86400000) + 1);
+  const base  = DEMO[STATE.view]['30d'];
+  const ratio = days / 30;
+  return {
+    ...base,
+    mql_tmrr:    Math.round(base.mql_tmrr    * ratio),
+    mql_target:  Math.round(base.mql_target  * ratio),
+    sql_tmrr:    Math.round(base.sql_tmrr    * ratio),
+    won_mrr:     Math.round(base.won_mrr     * ratio),
+    won_target:  Math.round(base.won_target  * ratio),
+    emfi_mrr:    Math.round(base.emfi_mrr    * ratio),
+    cw_rev:      Math.round(base.cw_rev      * ratio),
+    won_mrr_cd:  Math.round(base.won_mrr_cd  * ratio),
+    emfi_mrr_cd: Math.round(base.emfi_mrr_cd * ratio),
+    funnel:      base.funnel.map(v => Math.round(v * ratio)),
+  };
+}
+
+// ─────────────────────────────────────────────
+// VIEW TABS
+// ─────────────────────────────────────────────
+function setView(view, btn) {
+  STATE.view = view;
+  document.querySelectorAll('.view-tab').forEach(t => t.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+
+  const isAbout = view === 'about';
+  document.getElementById('dash-content').style.display  = isAbout ? 'none' : 'block';
+  document.getElementById('about-section').style.display = isAbout ? 'block' : 'none';
+
+  if (isAbout) return;
+
+  // Show/hide view-specific sections
+  document.querySelectorAll('.sme-only').forEach(el    => el.style.display = view === 'sme'    ? 'block' : 'none');
+  document.querySelectorAll('.upsell-only').forEach(el => el.style.display = view === 'upsell' ? 'block' : 'none');
+
+  // Upsell label overrides
+  if (view === 'upsell') {
+    document.getElementById('lbl-mql-tmrr').textContent       = 'TMRR vs Target';
+    document.getElementById('lbl-sql-tmrr').textContent       = 'SQL TMRR';
+    document.getElementById('source-chart-title').textContent = 'Created Leads by Source of Awareness';
+  } else {
+    document.getElementById('lbl-mql-tmrr').textContent       = 'MQL TMRR vs Target';
+    document.getElementById('lbl-sql-tmrr').textContent       = 'SQL TMRR';
+    document.getElementById('source-chart-title').textContent = 'Created Leads (MQL) by Channel Source';
+  }
+
+  if (!CONFIG.demo) { loadData(); } else { render(); }
+}
+
+// ─────────────────────────────────────────────
+// CHARTS
+// ─────────────────────────────────────────────
+let charts = {};
+function destroyCharts() { Object.values(charts).forEach(c => c.destroy()); charts = {}; }
+const GRID_COLOR = 'rgba(255,255,255,.05)';
+Chart.defaults.color = '#636E8A';
+Chart.defaults.font.family = "'IBM Plex Mono', monospace";
+Chart.defaults.font.size = 10;
+
+function fmt(n) {
+  if (n >= 1000000) return '₱' + (n/1000000).toFixed(1) + 'M';
+  if (n >= 1000)    return '₱' + (n/1000).toFixed(0) + 'K';
+  return '₱' + n;
+}
+function fmtN(n) { return n >= 1000 ? (n/1000).toFixed(1)+'K' : String(n); }
+function pct(a, b) { return b > 0 ? Math.round(a/b*100) : 0; }
+
+// ─────────────────────────────────────────────
+// RENDER
+// ─────────────────────────────────────────────
+function render() {
+  const d = getDataForRange();
+  const monthly = DEMO[STATE.view].monthly;
+
+  destroyCharts();
+
+  // KPI Cards
+  document.getElementById('kpi-mql-tmrr').textContent   = fmt(d.mql_tmrr);
+  document.getElementById('kpi-mql-target').textContent = `vs ${fmt(d.mql_target)} target`;
+  document.getElementById('kpi-sql-tmrr').textContent   = fmt(d.sql_tmrr);
+  document.getElementById('kpi-won-mrr').textContent    = fmt(d.won_mrr);
+  document.getElementById('kpi-won-target').textContent = `vs ${fmt(d.won_target)} target`;
+  document.getElementById('kpi-emfi').textContent       = fmt(d.emfi_mrr);
+  document.getElementById('kpi-cw-rev').textContent     = fmt(d.cw_rev);
+  document.getElementById('kpi-adv').textContent        = fmt(d.adv);
+  document.getElementById('kpi-velocity').textContent   = d.velocity + 'd';
+
+  // Target progress bars
+  const mqlPct = Math.min(pct(d.mql_tmrr, d.mql_target), 100);
+  const wonPct = Math.min(pct(d.won_mrr,  d.won_target), 100);
+  document.getElementById('mql-target-bar').style.width = mqlPct + '%';
+  document.getElementById('won-target-bar').style.width = wonPct + '%';
+  const mqlColor = mqlPct >= 100 ? 'var(--green)' : mqlPct >= 80 ? 'var(--yellow)' : 'var(--pink)';
+  const wonColor = wonPct >= 100 ? 'var(--green)' : wonPct >= 80 ? 'var(--yellow)' : 'var(--pink)';
+  document.getElementById('mql-target-bar').style.background = mqlColor;
+  document.getElementById('won-target-bar').style.background = wonColor;
+
+  // Conversion rates — create_date, MKT Inbound
+  const [r1, r2] = d.rates;
+  const [mql, sql, won] = d.funnel;
+  const isUpsell = STATE.view === 'upsell';
+  document.getElementById('lbl-rate1').textContent   = isUpsell ? 'UQL → SQL' : 'MQL → SQL';
+  document.getElementById('lbl-rate2').textContent   = 'SQL → Won';
+  document.getElementById('rate-1').textContent      = r1 + '%';
+  document.getElementById('rate-1-sub').textContent  = `${sql.toLocaleString()} of ${mql.toLocaleString()} ${isUpsell ? 'UQLs' : 'MQLs'}`;
+  document.getElementById('rate-1-bar').style.width  = r1 + '%';
+  document.getElementById('rate-2').textContent      = r2 + '%';
+  document.getElementById('rate-2-sub').textContent  = `${won.toLocaleString()} of ${sql.toLocaleString()} SQLs · create_date`;
+  document.getElementById('rate-2-bar').style.width  = r2 + '%';
+  document.getElementById('rate-won-mrr-cd').textContent  = fmt(d.won_mrr_cd);
+  document.getElementById('rate-emfi-mrr-cd').textContent = fmt(d.emfi_mrr_cd);
+
+  // Funnel
+  renderFunnel(d);
+
+  // SME ratio
+  if (STATE.view === 'sme' && d.micro_pct !== undefined) {
+    const mp = d.micro_pct, sp = 100 - mp;
+    document.getElementById('ratio-micro').style.width = mp + '%';
+    document.getElementById('ratio-micro').textContent = mp + '%';
+    document.getElementById('ratio-sme').style.width   = sp + '%';
+    document.getElementById('ratio-sme').textContent   = sp + '%';
+    document.getElementById('micro-count').textContent = d.micro_count.toLocaleString();
+    document.getElementById('sme-count').textContent   = d.sme_count.toLocaleString();
+  }
+
+  // Upsell per-product table
+  if (STATE.view === 'upsell' && d.products) renderProductTable(d.products);
+
+  // Charts
+  renderSourceChart(d.sources);
+  renderMRRChart(monthly);
+
+  // Subtitle
+  const rangeLabel = STATE.range === 'custom'
+    ? document.getElementById('date-range-display').textContent
+    : (RANGE_LABELS[STATE.range] || 'Selected Period');
+  document.getElementById('funnel-sub').textContent    = `Lead stages · ${rangeLabel} · create_date`;
+  document.getElementById('mrr-chart-sub').textContent = `${STATE.view === 'upsell' ? 'Upsell pipeline' : 'All pipelines'} · close_date · Jan–Dec 2024`;
+}
+
+function renderFunnel(d) {
+  const [mql, sql, won] = d.funnel;
+  const isUpsell = STATE.view === 'upsell';
+  const stages = [
+    { label: isUpsell ? 'UQL' : 'MQL', count: mql, color:'rgba(9,132,227,.7)',  rate:'100%',          rateColor:'var(--muted)' },
+    { label:'SQL',                      count: sql, color:'rgba(0,206,201,.7)',  rate:d.rates[0]+'%',  rateColor:'var(--teal)'  },
+    { label:'Won',                      count: won, color:'rgba(0,184,148,.7)',  rate:d.rates[1]+'%',  rateColor:'var(--green)' },
+  ];
+
+  const container = document.getElementById('funnel-stages');
+  container.innerHTML = stages.map((s, i) => {
+    const barW = Math.round(s.count / mql * 100);
+    return `
+      ${i > 0 ? `<div class="funnel-arrow">↓</div>` : ''}
+      <div class="funnel-stage">
+        <span class="funnel-stage-label">${s.label}</span>
+        <div class="funnel-bar-wrap">
+          <div class="funnel-bar-fill" style="width:${barW}%;background:${s.color}">
+            <span class="funnel-bar-count">${s.count.toLocaleString()}</span>
+          </div>
+        </div>
+        <span class="funnel-rate" style="color:${s.rateColor}">${s.rate}</span>
+      </div>`;
+  }).join('');
+}
+
+function renderProductTable(products) {
+  const entries = Object.entries(products).sort((a,b) => b[1]-a[1]);
+  const max = entries[0][1];
+  document.getElementById('product-table').innerHTML = entries.map(([name, mrr]) => {
+    const w = Math.round(mrr/max*100);
+    return `<tr>
+      <td class="prod-name">${name}</td>
+      <td class="prod-mrr">${fmt(mrr)}</td>
+      <td class="prod-bar-cell"><div class="prod-bar-wrap"><div class="prod-bar-fill" style="width:${w}%"></div></div></td>
+    </tr>`;
+  }).join('');
+}
+
+function renderSourceChart(sources) {
+  const ctx = document.getElementById('chart-source').getContext('2d');
+  const COLORS = ['rgba(108,92,231,.75)','rgba(9,132,227,.75)','rgba(0,184,148,.75)','rgba(253,203,110,.75)','rgba(253,121,168,.75)','rgba(0,206,201,.75)','rgba(225,112,85,.75)'];
+  const labels = Object.keys(sources);
+  const data   = Object.values(sources);
+  charts.source = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{ label:'MQL Count', data, backgroundColor: COLORS.slice(0,labels.length), borderRadius:4 }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { color: GRID_COLOR } },
+        y: { grid: { color: 'transparent' } }
+      }
+    }
+  });
+}
+
+function renderMRRChart(monthly) {
+  const ctx = document.getElementById('chart-mrr').getContext('2d');
+  charts.mrr = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: monthly.map(r => r.m),
+      datasets: [
+        { label:'Won MRR', data: monthly.map(r => r.won), backgroundColor: monthly.map(r => r.won >= r.target ? 'rgba(0,184,148,.75)' : 'rgba(108,92,231,.75)'), borderRadius:4, order:2 },
+        { label:'Target',  data: monthly.map(r => r.target), type:'line', borderColor:'rgba(253,203,110,.7)', borderWidth:2, borderDash:[5,3], pointRadius:3, pointBackgroundColor:'#FDCB6E', fill:false, tension:0.3, order:1 }
+      ]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { position:'top', labels:{ boxWidth:10, padding:14 } },
+        tooltip: { callbacks: { label: ctx => ' ' + fmt(ctx.raw) } }
+      },
+      scales: {
+        x: { grid: { color: GRID_COLOR } },
+        y: { grid: { color: GRID_COLOR }, ticks: { callback: v => fmt(v) } }
+      }
+    }
+  });
+}
+
+// ─────────────────────────────────────────────
+// MAIN LOAD
+// ─────────────────────────────────────────────
+async function loadData() {
+  // Set date picker defaults: Jan 1 of current year → today
+  const today = new Date();
+  const todayStr = today.toISOString().split('T')[0];
+  const janFirst = `${today.getFullYear()}-01-01`;
+  document.getElementById('date-from').value = janFirst;
+  document.getElementById('date-to').value   = todayStr;
+
+  const overlay    = document.getElementById('loading-overlay');
+  const loaderStep = document.getElementById('loader-step');
+  const refreshBtn = document.getElementById('refresh-btn');
+  overlay.classList.remove('hidden');
+  refreshBtn.classList.add('loading');
+  refreshBtn.textContent = '↻ Loading...';
+
+  if (!CONFIG.demo) {
+    const from = STATE.customFrom || janFirst;
+    const to   = STATE.customTo   || todayStr;
+    const liveSteps = ['Connecting to Databricks...','Querying pipeline (silver_line_items)...','Fetching MQL funnel (silver_deals)...','Loading targets (gold_targets)...','Building charts...'];
+    let si = 0;
+    loaderStep.textContent = liveSteps[0];
+    const stepTimer = setInterval(() => { if (si < liveSteps.length - 1) loaderStep.textContent = liveSteps[++si]; }, 900);
+    try {
+      const liveData = await fetchLiveData(STATE.view, from, to);
+      LIVE[STATE.view] = liveData;
+      DEMO[STATE.view].monthly = liveData.monthly.length ? liveData.monthly : DEMO[STATE.view].monthly;
+    } catch (err) {
+      loaderStep.textContent = `Error: ${err.message} — showing demo data`;
+      await new Promise(r => setTimeout(r, 2500));
+    }
+    clearInterval(stepTimer);
+  } else {
+    const steps = ['Fetching pipeline data...','Querying MQL metrics...','Loading conversion rates...','Building funnel...','Rendering charts...'];
+    for (let i = 0; i < steps.length; i++) {
+      loaderStep.textContent = steps[i];
+      await new Promise(r => setTimeout(r, 320));
+    }
+  }
+
+  render();
+
+  const now = new Date();
+  document.getElementById('last-updated').textContent = 'Updated ' + now.toLocaleTimeString('en-PH',{hour:'2-digit',minute:'2-digit'});
+  overlay.classList.add('hidden');
+  refreshBtn.classList.remove('loading');
+  refreshBtn.textContent = '↻ Refresh';
+}
+
+loadData();
+</script>
+</body>
+</html>
